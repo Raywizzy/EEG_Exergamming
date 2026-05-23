@@ -1,0 +1,51 @@
+# Beta Burst Detection Parameters
+# Regulatory-grade configuration following He et al. 2020 eLife
+# Updated: 2025-09-14T00:58:00Z - Phase 5 Real Burst Extraction
+
+# Signal preprocessing
+bandpass_hz: [13, 30]  # Hz - beta frequency band
+notch_hz: 50  # Hz - mains frequency (50Hz EU, 60Hz US)
+reference: "CAR"  # common average reference
+envelope: "hilbert"  # Hilbert transform for amplitude envelope
+
+# Burst detection
+threshold: "median_plus_2MAD"  # median + 2×MAD threshold
+# Alternative: "percentile_80" for 80th percentile threshold
+min_duration_ms: 100  # minimum burst duration in milliseconds
+merge_gap_ms: 60  # maximum gap for burst merging in milliseconds
+
+# Spatial regions (based on 10-20 system)
+regions:
+  motor: ["C3", "Cz", "C4"]
+  posterior: ["P3", "Pz", "P4", "O1", "O2"]
+  frontal: ["F3", "Fz", "F4"]
+  temporal: ["T7", "T8"]
+
+# Feature extraction
+features:
+  - rate_per_min  # bursts per minute
+  - mean_duration_ms  # mean burst duration (milliseconds)
+  - median_duration_ms  # median burst duration (milliseconds)
+  - mean_peak_amp  # mean burst peak amplitude
+  - p95_peak_amp  # 95th percentile peak amplitude
+  - duty_cycle  # fraction of time in bursts
+  - mean_ibi_ms  # mean inter-burst interval (milliseconds)
+  - cv_ibi  # coefficient of variation of inter-burst intervals
+  - density_per_10s  # burst density per 10-second windows
+  - duration_cv  # coefficient of variation of durations
+  - amplitude_cv  # coefficient of variation of amplitudes
+  - motor_posterior_rate_ratio  # motor/posterior burst rate ratio
+  - motor_posterior_duty_ratio  # motor/posterior duty cycle ratio
+
+# Quality control
+quality_control:
+  min_bursts_per_session: 5  # minimum bursts required for reliable estimates
+  max_burst_rate: 60  # bursts per minute (sanity check)
+  artifact_detection: true  # detect and flag high-amplitude artifacts
+
+# Reproducibility
+random_seed: 42
+version: "1.0.0"
+references:
+  - "He et al. 2020 eLife - Closed-loop neurofeedback"
+  - "10.7554/eLife.59264"

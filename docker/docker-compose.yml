@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  core15-pipeline:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: core15-eeg-biomarker:latest
+    container_name: core15-clinical-pipeline
+
+    # Environment variables for clinical deployment
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - MNE_LOGGING_LEVEL=WARNING
+      - CLINICAL_MODE=true
+      - REGULATORY_COMPLIANCE=enabled
+      - AUDIT_LOGGING=enabled
+
+    # Volume mounts for data and outputs
+    volumes:
+      - ${EEG_DATA_DIR:-./test_data}:/app/input:ro  # Read-only input data
+      - ${OUTPUT_DIR:-./clinical_output}:/app/clinical_output  # Output directory
+      - ${LOG_DIR:-./clinical_logs}:/app/clinical_logs  # Log directory
+      - ${MODELS_DIR:-./models}:/app/models:ro  # Trained models (read-only)
+
+    # Working directory
+    working_dir: /app
+
+    # Default command
+    command: ["python", "clinical_pipeline.py", "--help"]
+
+    # Resource limits for clinical deployment
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+        reservations:
+          memory: 2G
+          cpus: "1.0"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import src.preprocess.pipeline; print('Pipeline ready')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Network configuration
+    networks:
+      - clinical-network
+
+  # Optional: Web interface for clinical use
+  core15-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    image: core15-web-interface:latest
+    container_name: core15-web-interface
+
+    environment:
+      - FLASK_ENV=production
+      - CLINICAL_API_URL=http://core15-pipeline:8080
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      - core15-pipeline
+
+    volumes:
+      - ${OUTPUT_DIR:-./clinical_output}:/app/clinical_output:ro
+
+    networks:
+      - clinical-network
+
+    restart: unless-stopped
+
+networks:
+  clinical-network:
+    driver: bridge
+    name: core15-clinical-network
+
+volumes:
+  clinical_output:
+    name: core15-clinical-output
+  clinical_logs:
+    name: core15-clinical-logs

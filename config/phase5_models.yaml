@@ -1,0 +1,380 @@
+# Phase V Deep Learning Model Configurations
+# Architecture definitions and hyperparameters for EEG biomarker enhancement
+
+# Global training configuration
+training:
+  framework: pytorch
+  device: auto  # cuda if available, else cpu
+  mixed_precision: true
+  random_seed: 42
+
+  # Optimization
+  optimizer: AdamW
+  learning_rate: 1e-3
+  weight_decay: 1e-4
+
+  # Scheduling
+  scheduler: CosineAnnealingWarmRestarts
+  warmup_epochs: 10
+  max_epochs: 200
+  patience: 20  # early stopping
+
+  # Batching
+  batch_size: 32
+  accumulate_grad_batches: 1
+
+  # Regularization
+  dropout: 0.3
+  batch_norm: true
+  gradient_clipping: 1.0
+
+# Loss and metrics
+loss:
+  type: FocalLoss
+  alpha: 1.0  # class balance weight
+  gamma: 2.0  # focusing parameter
+  class_weights: balanced  # auto-computed from data
+
+metrics:
+  primary: balanced_accuracy
+  secondary: [roc_auc, sensitivity, specificity, f1_score]
+  threshold_optimization: true
+
+# Model architectures
+models:
+
+  # Baseline: Classical ML for comparison
+  core5_baseline:
+    type: classical
+    algorithm: LogisticRegression
+    features: core5  # duration_cv, duty_cycle, mean_duration_ms, median_duration_ms, motor_posterior_duty_ratio
+    scaling: StandardScaler
+    domain_adaptation: CORAL
+
+  # Architecture 1: EEGNet (Lightweight CNN)
+  eegnet:
+    type: deep_learning
+    framework: pytorch
+    architecture: EEGNet
+
+    # Input configuration
+    input:
+      channels: [C3, Cz, C4, P3, Pz, P4, O1, O2]  # 8 channels
+      sampling_rate: 250
+      epoch_duration: 2.0  # seconds
+
+    # Network architecture
+    layers:
+      # Temporal convolution
+      temporal_conv:
+        filters: 16
+        kernel_length: 64  # ~256ms at 250Hz
+        padding: same
+
+      # Depthwise spatial convolution
+      depthwise_conv:
+        depth_multiplier: 2
+        kernel_size: [8, 1]  # channels × 1
+        constraint: max_norm_1
+
+      # Separable convolution
+      separable_conv:
+        filters: 16
+        kernel_length: 16  # ~64ms
+        padding: same
+
+      # Classification head
+      classifier:
+        global_pool: average
+        dropout: 0.5
+        dense_units: 2  # PD_REAL/PD_SHAM
+
+    # Training specifics
+    learning_rate: 5e-4
+    batch_size: 64
+    data_augmentation:
+      noise_std: 0.1
+      time_shift: 0.05  # ±50ms
+
+  # Architecture 2: Temporal CNN (β-burst specialized)
+  temporal_cnn:
+    type: deep_learning
+    framework: pytorch
+    architecture: TemporalCNN
+
+    # Input: β-band envelope
+    input:
+      data_type: beta_envelope  # 13-30Hz Hilbert transform
+      channels: [C3, Cz, C4, P3, Pz, P4, O1, O2]
+      sampling_rate: 250
+      epoch_duration: 2.0
+
+    # Multi-scale temporal convolutions
+    layers:
+      # Multi-scale feature extraction
+      multiscale_conv:
+        kernel_sizes: [12, 25, 50]  # 50ms, 100ms, 200ms at 250Hz
+        filters_per_scale: 32
+        activation: gelu
+
+      # Spatial attention
+      spatial_attention:
+        type: channel_attention
+        reduction_ratio: 4
+        regions:
+          motor: [C3, Cz, C4]
+          posterior: [P3, Pz, P4, O1, O2]
+
+      # Temporal attention
+      temporal_attention:
+        type: self_attention
+        head_dim: 64
+        num_heads: 8
+
+      # Feature fusion
+      fusion:
+        method: concatenate
+        dropout: 0.4
+        batch_norm: true
+
+      # Classification
+      classifier:
+        hidden_units: [128, 64]
+        dropout: 0.5
+        output_units: 2
+
+    # Training configuration
+    learning_rate: 1e-3
+    batch_size: 32
+    loss_weights:
+      classification: 1.0
+      attention_regularization: 0.1
+
+  # Architecture 3: Bidirectional LSTM
+  bilstm:
+    type: deep_learning
+    framework: pytorch
+    architecture: BiLSTM
+
+    # Input: Sequential β-burst features
+    input:
+      data_type: burst_sequence
+      sequence_length: 60  # 2-second epochs with 30Hz features
+      feature_dim: 16  # burst characteristics per time step
+
+    # Network layers
+    layers:
+      # Input embedding
+      embedding:
+        input_dim: 16
+        hidden_dim: 64
+        dropout: 0.2
+
+      # Bidirectional LSTM layers
+      lstm_stack:
+        num_layers: 2
+        hidden_size: 128
+        dropout: 0.3
+        bidirectional: true
+
+      # Attention mechanism
+      attention:
+        type: bahdanau
+        hidden_size: 128
+
+      # Classification head
+      classifier:
+        input_size: 256  # 2 * hidden_size (bidirectional)
+        hidden_sizes: [128, 64]
+        dropout: 0.5
+        output_size: 2
+
+    # Training
+    learning_rate: 1e-3
+    batch_size: 16  # Smaller due to sequence length
+    max_grad_norm: 1.0
+
+  # Architecture 4: Hybrid CNN-RNN
+  cnn_rnn_hybrid:
+    type: deep_learning
+    framework: pytorch
+    architecture: HybridCNNRNN
+
+    # Input: Raw EEG with spectral decomposition
+    input:
+      data_type: raw_eeg
+      channels: [C3, Cz, C4, P3, Pz, P4, O1, O2]
+      sampling_rate: 250
+      epoch_duration: 2.0
+      frequency_bands:
+        alpha: [8, 12]
+        beta: [13, 30]
+        gamma: [30, 45]
+
+    # Hybrid architecture
+    layers:
+      # Spatial CNN branch
+      spatial_cnn:
+        conv1d_layers:
+          - filters: 32, kernel: 3, activation: gelu
+          - filters: 64, kernel: 3, activation: gelu
+        pooling: adaptive_avg_pool
+
+      # Temporal CNN branch
+      temporal_cnn:
+        conv1d_layers:
+          - filters: 32, kernel: 7, activation: gelu
+          - filters: 64, kernel: 5, activation: gelu
+        dilated_conv:
+          filters: 64
+          kernel: 3
+          dilations: [1, 2, 4, 8]
+
+      # RNN branch for sequences
+      rnn_branch:
+        type: GRU
+        hidden_size: 128
+        num_layers: 2
+        dropout: 0.3
+
+      # Multi-head attention fusion
+      fusion_attention:
+        num_heads: 8
+        embed_dim: 256
+        dropout: 0.1
+
+      # Final classification
+      classifier:
+        fusion_method: weighted_sum
+        hidden_units: [256, 128, 64]
+        dropout: [0.5, 0.4, 0.3]
+        output_units: 2
+
+    # Advanced training
+    learning_rate: 1e-3
+    batch_size: 16
+    mixed_precision: true
+    gradient_accumulation: 2
+
+    # Multi-task learning (optional)
+    auxiliary_tasks:
+      burst_detection:
+        weight: 0.3
+        type: binary_classification
+      frequency_prediction:
+        weight: 0.2
+        type: regression
+
+# Hyperparameter optimization
+hyperopt:
+  method: optuna
+  n_trials: 100
+  timeout: 3600  # 1 hour per architecture
+
+  # Search spaces
+  search_spaces:
+    learning_rate: [1e-5, 1e-2, log]
+    batch_size: [8, 16, 32, 64]
+    dropout: [0.1, 0.6, uniform]
+    hidden_size: [64, 512, step=64]
+
+  # Optimization
+  direction: maximize
+  metric: balanced_accuracy
+  pruning: true
+
+# Data augmentation
+augmentation:
+  # Temporal augmentations
+  time_shift:
+    enabled: true
+    max_shift: 0.1  # ±100ms
+
+  noise_injection:
+    enabled: true
+    noise_std: 0.05
+
+  amplitude_scaling:
+    enabled: true
+    scale_range: [0.8, 1.2]
+
+  # Frequency domain
+  frequency_shift:
+    enabled: true
+    max_shift: 1.0  # ±1Hz
+
+  # Advanced augmentations
+  mixup:
+    enabled: false  # Experimental
+    alpha: 0.2
+
+  cutmix:
+    enabled: false  # Experimental
+    alpha: 1.0
+
+# Ensemble configuration
+ensemble:
+  methods:
+    voting:
+      models: [eegnet, temporal_cnn, bilstm]
+      voting_type: soft
+
+    stacking:
+      base_models: [eegnet, temporal_cnn, bilstm]
+      meta_model: LogisticRegression
+      cv_folds: 5
+
+    boosting:
+      n_estimators: 100
+      learning_rate: 0.1
+
+  selection_criteria:
+    diversity_threshold: 0.1
+    performance_threshold: 0.65
+
+# Interpretability
+interpretability:
+  methods:
+    attention_maps:
+      enabled: true
+      visualization: true
+
+    grad_cam:
+      enabled: true
+      target_layers: [temporal_conv, spatial_attention]
+
+    shap:
+      enabled: true
+      n_samples: 100
+      background_samples: 50
+
+    integrated_gradients:
+      enabled: true
+      n_steps: 50
+
+  outputs:
+    save_maps: true
+    generate_reports: true
+    clinical_summaries: true
+
+# Deployment
+deployment:
+  target_platforms: [cpu, gpu, edge]
+
+  optimization:
+    quantization: int8
+    pruning: 0.3  # 30% sparsity
+    distillation:
+      teacher_model: cnn_rnn_hybrid
+      student_model: eegnet
+      alpha: 0.7
+
+  inference:
+    batch_size: 1
+    latency_target: 100  # ms
+    memory_limit: 512  # MB
+
+  monitoring:
+    drift_detection: true
+    performance_tracking: true
+    uncertainty_estimation: true

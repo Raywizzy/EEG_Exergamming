@@ -1,0 +1,33 @@
+.DS_Store
+._*
+
+# Python/runtime caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local editor/assistant state
+.claude/
+.qodo/
+.env
+.env.*
+
+# EEG datasets and nested dataset repositories
+data/
+bids/
+
+# Generated run artifacts
+logs/
+clinical_audit_logs/
+results/
+artifacts/
+models/**/*.pkl
+models/**/*.pth
+
+# OS/package build outputs
+build/
+dist/
+*.egg-info/

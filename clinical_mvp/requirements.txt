@@ -1,0 +1,49 @@
+# Core15+ Clinical EEG Validator Dependencies
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+jinja2==3.1.2
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# EEG Processing Pipeline
+mne==1.5.1
+numpy==1.24.3
+scipy==1.11.4
+pandas==2.1.3
+scikit-learn==1.3.2
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Additional robustness testing dependencies
+plotly==5.17.0
+
+# Clinical Features
+pydantic==2.5.0
+pydantic-settings==2.1.0
+typing-extensions==4.8.0
+
+# PDF Generation
+jinja2-pdf==0.1.0
+weasyprint==60.1
+pdfkit==1.0.0
+
+# File Processing
+zipfile-deflate64==0.2.0
+pathlib2==2.3.7
+
+# Database & Storage
+sqlite3-utils==3.35.0
+
+# Testing & Validation
+pytest==7.4.3
+pytest-asyncio==0.21.1
+requests==2.31.0
+
+# Logging & Monitoring
+structlog==23.2.0
+rich==13.7.0
+
+# Clinical Compliance
+jsonschema==4.20.0
+iso8601==2.1.0

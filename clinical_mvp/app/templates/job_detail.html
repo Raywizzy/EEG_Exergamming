@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="job-detail-page">
+    <!-- Job Header -->
+    <div class="job-header">
+        <div class="job-title">
+            <h3>Job {{ job.job_id[:8] }}...</h3>
+            <span class="status-badge large {{ job.status }}">
+                {% if job.status == 'queued' %}
+                    ⏳ Queued
+                {% elif job.status == 'running' %}
+                    ⚙️ Running
+                {% elif job.status == 'succeeded' %}
+                    ✅ Completed
+                {% elif job.status == 'failed' %}
+                    ❌ Failed
+                {% else %}
+                    {{ job.status.title() }}
+                {% endif %}
+            </span>
+        </div>
+        <div class="job-actions">
+            <a href="/ui/jobs" class="btn btn-secondary">
+                <span class="btn-icon">←</span>
+                Back to Jobs
+            </a>
+            {% if job.status == 'succeeded' %}
+                <a href="/ui/jobs/{{ job.job_id }}/download/pdf" class="btn btn-primary">
+                    <span class="btn-icon">📄</span>
+                    Download PDF
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Job Overview -->
+    <div class="job-overview">
+        <div class="overview-grid">
+            <div class="overview-item">
+                <div class="overview-label">Site ID</div>
+                <div class="overview-value">{{ job.site_id }}</div>
+            </div>
+            <div class="overview-item">
+                <div class="overview-label">Trial ID</div>
+                <div class="overview-value">{{ job.trial_id }}</div>
+            </div>
+            <div class="overview-item">
+                <div class="overview-label">Created</div>
+                <div class="overview-value">{{ job.created_at[:19].replace('T', ' ') }}</div>
+            </div>
+            <div class="overview-item">
+                <div class="overview-label">Subjects</div>
+                <div class="overview-value">
+                    {% if job.subjects %}
+                        {{ job.subjects|length }} specified
+                    {% else %}
+                        Auto-discover all
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    {% if job.status == 'succeeded' %}
+    <div class="metrics-section">
+        <h4>Performance Metrics</h4>
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-value">
+                    {% if job.ba %}
+                        {{ "%.1f"|format(job.ba) }}%
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div class="metric-label">Balanced Accuracy</div>
+                <div class="metric-target">Target: 97.2%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">
+                    {% if job.p_value %}
+                        {{ "%.3f"|format(job.p_value) }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div class="metric-label">p-value</div>
+                <div class="metric-target">Target: &lt; 0.05</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">
+                    {% if job.effect_size %}
+                        {{ "%.2f"|format(job.effect_size) }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div class="metric-label">Effect Size (d)</div>
+                <div class="metric-target">Target: ≥ 0.8</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">
+                    {% if job.runtime_sec %}
+                        {{ "%.1f"|format(job.runtime_sec) }}s
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div class="metric-label">Runtime</div>
+                <div class="metric-target">Target: 0.41s/subject</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Error Information -->
+    {% if job.status == 'failed' and job.error %}
+    <div class="error-section">
+        <h4>Error Information</h4>
+        <div class="error-card">
+            <div class="error-icon">⚠️</div>
+            <div class="error-content">
+                <div class="error-title">Job Failed</div>
+                <div class="error-message">{{ job.error }}</div>
+                <div class="error-help">
+                    <strong>Common Solutions:</strong>
+                    <ul>
+                        <li>Check that your BIDS dataset is properly formatted</li>
+                        <li>Ensure EEG files are in supported format (.bdf, .edf, .set)</li>
+                        <li>Verify that subjects have at least 2 minutes of data</li>
+                        <li>Check that channel count is at least 19</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Clinical Report -->
+    {% if job_details.clinical_report %}
+    <div class="clinical-report-section">
+        <h4>Clinical Report Summary</h4>
+        <div class="report-content">
+            {% set report = job_details.clinical_report %}
+            <div class="report-grid">
+                <div class="report-item">
+                    <div class="report-label">Classification Result</div>
+                    <div class="report-value">
+                        {{ report.classification_result.predicted_class if report.classification_result else 'N/A' }}
+                    </div>
+                </div>
+                <div class="report-item">
+                    <div class="report-label">Confidence</div>
+                    <div class="report-value">
+                        {% if report.classification_result and report.classification_result.confidence %}
+                            {{ "%.1f"|format(report.classification_result.confidence * 100) }}%
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="report-item">
+                    <div class="report-label">Quality Status</div>
+                    <div class="report-value">
+                        {% if report.quality_assessment %}
+                            {{ 'Pass' if report.quality_assessment.overall_pass else 'Fail' }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="report-item">
+                    <div class="report-label">Features Extracted</div>
+                    <div class="report-value">
+                        {% if report.biomarker_summary %}
+                            {{ report.biomarker_summary.total_features }} features
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quality Control -->
+    {% if job_details.qc_metrics %}
+    <div class="qc-section">
+        <h4>Quality Control Assessment</h4>
+        {% set qc = job_details.qc_metrics %}
+        <div class="qc-status">
+            <div class="qc-overall">
+                <span class="qc-badge {{ 'pass' if qc.overall_pass else 'fail' }}">
+                    {{ 'QC PASS' if qc.overall_pass else 'QC FAIL' }}
+                </span>
+            </div>
+        </div>
+
+        <div class="qc-details">
+            <div class="qc-grid">
+                <div class="qc-item">
+                    <div class="qc-label">Signal Quality</div>
+                    <div class="qc-value">{{ "%.1f"|format(qc.signal_quality_score * 100) }}%</div>
+                    <div class="qc-status-indicator {{ 'good' if qc.signal_quality_score > 0.8 else 'warning' if qc.signal_quality_score > 0.6 else 'poor' }}"></div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-label">Channel Coverage</div>
+                    <div class="qc-value">{{ "%.1f"|format(qc.channel_coverage_score * 100) }}%</div>
+                    <div class="qc-status-indicator {{ 'good' if qc.channel_coverage_score > 0.8 else 'warning' if qc.channel_coverage_score > 0.6 else 'poor' }}"></div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-label">Feature Quality</div>
+                    <div class="qc-value">{{ "%.1f"|format(qc.feature_quality_score * 100) }}%</div>
+                    <div class="qc-status-indicator {{ 'good' if qc.feature_quality_score > 0.8 else 'warning' if qc.feature_quality_score > 0.6 else 'poor' }}"></div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-label">Processing Quality</div>
+                    <div class="qc-value">{{ "%.1f"|format(qc.processing_quality_score * 100) }}%</div>
+                    <div class="qc-status-indicator {{ 'good' if qc.processing_quality_score > 0.8 else 'warning' if qc.processing_quality_score > 0.6 else 'poor' }}"></div>
+                </div>
+            </div>
+
+            {% if qc.warnings %}
+            <div class="qc-warnings">
+                <h5>Warnings</h5>
+                <ul>
+                    {% for warning in qc.warnings %}
+                    <li class="qc-warning">⚠️ {{ warning }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if qc.errors %}
+            <div class="qc-errors">
+                <h5>Errors</h5>
+                <ul>
+                    {% for error in qc.errors %}
+                    <li class="qc-error">❌ {{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Subject List -->
+    {% if job.subjects %}
+    <div class="subjects-section">
+        <h4>Processed Subjects</h4>
+        <div class="subjects-list">
+            {% for subject in job.subjects %}
+            <span class="subject-badge">{{ subject }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Technical Details -->
+    <div class="technical-section">
+        <h4>Technical Details</h4>
+        <div class="technical-grid">
+            <div class="technical-item">
+                <div class="technical-label">Job ID</div>
+                <div class="technical-value">
+                    <code>{{ job.job_id }}</code>
+                </div>
+            </div>
+            <div class="technical-item">
+                <div class="technical-label">Input Directory</div>
+                <div class="technical-value">
+                    <code>{{ job.bids_dir }}</code>
+                </div>
+            </div>
+            <div class="technical-item">
+                <div class="technical-label">Output Directory</div>
+                <div class="technical-value">
+                    <code>{{ job.out_dir }}</code>
+                </div>
+            </div>
+            {% if job.command %}
+            <div class="technical-item full-width">
+                <div class="technical-label">Command Executed</div>
+                <div class="technical-value">
+                    <code class="command-line">{{ job.command }}</code>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Download Links -->
+    {% if job.status == 'succeeded' %}
+    <div class="downloads-section">
+        <h4>Download Results</h4>
+        <div class="download-grid">
+            <a href="/ui/jobs/{{ job.job_id }}/download/pdf" class="download-card">
+                <div class="download-icon">📄</div>
+                <div class="download-content">
+                    <div class="download-title">Clinical Report (PDF)</div>
+                    <div class="download-desc">Comprehensive clinical validation report</div>
+                </div>
+            </a>
+            <a href="/ui/jobs/{{ job.job_id }}/download/csv" class="download-card">
+                <div class="download-icon">📊</div>
+                <div class="download-content">
+                    <div class="download-title">Features (CSV)</div>
+                    <div class="download-desc">Core15+ biomarker features data</div>
+                </div>
+            </a>
+            <a href="/ui/jobs/{{ job.job_id }}/download/json" class="download-card">
+                <div class="download-icon">💾</div>
+                <div class="download-content">
+                    <div class="download-title">Raw Results (JSON)</div>
+                    <div class="download-desc">Complete validation results and metadata</div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh if job is running
+    const status = '{{ job.status }}';
+    if (status === 'running' || status === 'queued') {
+        console.log(`Job status is ${status}, enabling auto-refresh`);
+
+        // Show auto-refresh indicator
+        const header = document.querySelector('.job-header');
+        const indicator = document.createElement('div');
+        indicator.className = 'auto-refresh-indicator';
+        indicator.innerHTML = '🔄 Auto-refreshing every 15s';
+        header.appendChild(indicator);
+
+        // Refresh every 15 seconds
+        setInterval(() => {
+            if (!document.hidden) {
+                console.log('Refreshing job status');
+                location.reload();
+            }
+        }, 15000);
+    }
+
+    // Add clipboard copy for technical details
+    const codeElements = document.querySelectorAll('code');
+    codeElements.forEach(element => {
+        element.addEventListener('click', () => {
+            navigator.clipboard.writeText(element.textContent).then(() => {
+                element.style.backgroundColor = '#10b981';
+                element.style.color = 'white';
+                setTimeout(() => {
+                    element.style.backgroundColor = '';
+                    element.style.color = '';
+                }, 1000);
+            });
+        });
+        element.title = 'Click to copy';
+        element.style.cursor = 'pointer';
+    });
+});
+</script>
+{% endblock %}

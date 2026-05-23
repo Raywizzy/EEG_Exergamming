@@ -1,0 +1,61 @@
+# Phase 7 External Validation Configuration
+# DO NOT CHANGE ANYTHING IN beta_burst_params.yaml - this file only sets paths
+# Locked configuration for Leicester external validation
+
+paths:
+  raw_dir: "data/external/leicester"
+  processed_dir: "data/processed/leicester"
+  out_dir: "results/phase7_external"
+  artifacts_dir: "artifacts"
+
+inputs:
+  # Leicester dataset metadata structure (must match actual file)
+  metadata_csv: "data/external/leicester/metadata.csv"
+  label_column: "condition"           # values: PD_REAL / PD_SHAM
+  subject_column: "subject_id"
+  session_column: "session_id"
+
+artifacts:
+  model_file: "artifacts/model.pkl"
+  feature_list_file: "artifacts/feature_list.json"
+  label_mapping_file: "artifacts/label_mapping.json"
+  training_stats: "artifacts/training_feature_stats.json"
+
+evaluation:
+  n_bootstrap: 1000
+  n_permutation: 1000
+  random_seed: 42
+  primary_metric: "balanced_accuracy"
+  confidence_level: 0.95
+
+plots:
+  dpi: 300
+  style: "default"                    # matplotlib default for reproducibility
+  figsize_single: [8, 6]
+  figsize_multi: [12, 8]
+
+logging:
+  level: "INFO"
+
+# Phase 6 reference performance (for comparison)
+phase6_reference:
+  balanced_accuracy: 0.959
+  std_dev: 0.019
+  bootstrap_ci_lower: 0.885
+  bootstrap_ci_upper: 0.960
+  cv_method: "StratifiedGroupKFold"
+  n_folds: 5
+  n_subjects: 31
+  n_samples: 514
+
+# External validation expectations
+external_validation:
+  target_performance: 0.70          # Minimum acceptable BA
+  expected_drop: 0.05               # Typical generalization gap
+  alert_threshold: 0.65             # Performance below this triggers investigation
+
+# Feature alignment rules
+feature_processing:
+  handle_missing: "warn_and_impute" # Options: "error", "warn_and_impute", "drop"
+  feature_tolerance: 1e-6           # Numerical precision for feature alignment
+  scaling_method: "locked_training_scaler"  # Use exact training scaler only

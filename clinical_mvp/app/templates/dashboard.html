@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Performance Overview Cards -->
+    <div class="stats-grid">
+        <div class="stat-card performance">
+            <div class="stat-value">{{ performance_ba }}%</div>
+            <div class="stat-label">Balanced Accuracy</div>
+            <div class="stat-subtitle">Phase V Validation</div>
+        </div>
+        <div class="stat-card speed">
+            <div class="stat-value">{{ processing_time }}</div>
+            <div class="stat-label">Processing Time</div>
+            <div class="stat-subtitle">per subject</div>
+        </div>
+        <div class="stat-card jobs">
+            <div class="stat-value">{{ total_jobs }}</div>
+            <div class="stat-label">Total Jobs</div>
+            <div class="stat-subtitle">all time</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-value">{{ "%.1f"|format(success_rate) }}%</div>
+            <div class="stat-label">Success Rate</div>
+            <div class="stat-subtitle">job completion</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions-section">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+            <a href="/ui/upload" class="btn btn-primary">
+                <span class="btn-icon">📤</span>
+                Upload EEG Data
+            </a>
+            <a href="/ui/jobs" class="btn btn-secondary">
+                <span class="btn-icon">📊</span>
+                View All Jobs
+            </a>
+            <a href="/api/docs" class="btn btn-secondary">
+                <span class="btn-icon">📚</span>
+                API Documentation
+            </a>
+            <a href="/ui/help" class="btn btn-secondary">
+                <span class="btn-icon">❓</span>
+                Help & Support
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Jobs -->
+    <div class="recent-jobs">
+        <h3>Recent Validation Jobs</h3>
+        {% if recent_jobs %}
+        <div class="jobs-table-container">
+            <table class="jobs-table">
+                <thead>
+                    <tr>
+                        <th>Job ID</th>
+                        <th>Site</th>
+                        <th>Trial</th>
+                        <th>Status</th>
+                        <th>Balanced Accuracy</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in recent_jobs %}
+                    <tr>
+                        <td>
+                            <code class="job-id">{{ job.job_id[:8] }}...</code>
+                        </td>
+                        <td>{{ job.site_id }}</td>
+                        <td>{{ job.trial_id }}</td>
+                        <td>
+                            <span class="status-badge {{ job.status }}">
+                                {{ job.status.title() }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if job.ba %}
+                                <span class="ba-value">{{ "%.1f"|format(job.ba) }}%</span>
+                            {% else %}
+                                <span class="na-value">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <time class="created-time">
+                                {{ job.created_at[:16].replace('T', ' ') }}
+                            </time>
+                        </td>
+                        <td>
+                            <div class="action-links">
+                                <a href="/ui/jobs/{{ job.job_id }}" class="link">View</a>
+                                {% if job.status == 'succeeded' %}
+                                <a href="/ui/jobs/{{ job.job_id }}/download/pdf" class="link">PDF</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <a href="/ui/jobs" class="link">View all jobs →</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h4>No validation jobs yet</h4>
+            <p>Upload your first EEG dataset to get started with biomarker validation.</p>
+            <a href="/ui/upload" class="btn btn-primary">Upload EEG Data</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- System Status -->
+    <div class="system-status">
+        <h3>System Status</h3>
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div class="status-text">
+                    <div class="status-title">Core15+ Pipeline</div>
+                    <div class="status-subtitle">Operational</div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div class="status-text">
+                    <div class="status-title">Quality Control</div>
+                    <div class="status-subtitle">Active</div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div class="status-text">
+                    <div class="status-title">Audit Logging</div>
+                    <div class="status-subtitle">Recording</div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div class="status-text">
+                    <div class="status-title">Storage</div>
+                    <div class="status-subtitle">Available</div>
+                </div>
+            </div>
+        </div>
+        <div class="status-footer">
+            <a href="/api/health/detailed" class="link">Detailed system status →</a>
+        </div>
+    </div>
+
+    <!-- Performance Benchmarks -->
+    <div class="benchmarks">
+        <h3>Performance Benchmarks</h3>
+        <div class="benchmark-grid">
+            <div class="benchmark-item">
+                <div class="benchmark-title">Cross-site Validation</div>
+                <div class="benchmark-detail">
+                    <div class="benchmark-value">3 sites</div>
+                    <div class="benchmark-desc">Iowa, UCSD, UNM/Iowa</div>
+                </div>
+            </div>
+            <div class="benchmark-item">
+                <div class="benchmark-title">Statistical Significance</div>
+                <div class="benchmark-detail">
+                    <div class="benchmark-value">p = 0.003</div>
+                    <div class="benchmark-desc">Highly significant</div>
+                </div>
+            </div>
+            <div class="benchmark-item">
+                <div class="benchmark-title">Effect Size</div>
+                <div class="benchmark-detail">
+                    <div class="benchmark-value">d = 12.0</div>
+                    <div class="benchmark-desc">Exceptionally large</div>
+                </div>
+            </div>
+            <div class="benchmark-item">
+                <div class="benchmark-title">Clinical Threshold</div>
+                <div class="benchmark-detail">
+                    <div class="benchmark-value">+32.2%</div>
+                    <div class="benchmark-desc">Above 65% requirement</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

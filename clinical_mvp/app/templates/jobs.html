@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jobs-page">
+    <div class="jobs-header">
+        <div class="jobs-title">
+            <h3>Validation Jobs</h3>
+            <p>Monitor and manage your EEG biomarker validation jobs</p>
+        </div>
+        <div class="jobs-actions">
+            <a href="/ui/upload" class="btn btn-primary">
+                <span class="btn-icon">📤</span>
+                New Validation Job
+            </a>
+            <button onclick="startRobustnessTest()" class="btn btn-secondary" id="robustness-btn">
+                <span class="btn-icon">🧪</span>
+                Run Robustness Test
+            </button>
+            <button onclick="location.reload()" class="btn btn-secondary">
+                <span class="btn-icon">🔄</span>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    {% if jobs %}
+    <div class="jobs-table-container">
+        <table class="jobs-table">
+            <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>Site</th>
+                    <th>Trial</th>
+                    <th>Status</th>
+                    <th>Subjects</th>
+                    <th>Balanced Accuracy</th>
+                    <th>p-value</th>
+                    <th>Effect Size</th>
+                    <th>Created</th>
+                    <th>Runtime</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr class="job-row" data-status="{{ job.status }}">
+                    <td>
+                        <code class="job-id">
+                            <a href="/ui/jobs/{{ job.job_id }}">{{ job.job_id[:8] }}...</a>
+                        </code>
+                    </td>
+                    <td>
+                        <span class="site-badge">{{ job.site_id }}</span>
+                    </td>
+                    <td>
+                        <span class="trial-badge">{{ job.trial_id }}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge {{ job.status }}">
+                            {% if job.status == 'queued' %}
+                                ⏳ Queued
+                            {% elif job.status == 'running' %}
+                                ⚙️ Running
+                            {% elif job.status == 'succeeded' %}
+                                ✅ Completed
+                            {% elif job.status == 'failed' %}
+                                ❌ Failed
+                            {% else %}
+                                {{ job.status.title() }}
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if job.subjects %}
+                            <span class="subject-count">{{ job.subjects|length }} subjects</span>
+                        {% else %}
+                            <span class="subject-count auto">Auto-discover</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.ba %}
+                            <span class="ba-value {{ 'excellent' if job.ba >= 90 else 'good' if job.ba >= 75 else 'moderate' }}">
+                                {{ "%.1f"|format(job.ba) }}%
+                            </span>
+                        {% else %}
+                            <span class="na-value">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.p_value %}
+                            <span class="p-value {{ 'significant' if job.p_value < 0.05 else 'not-significant' }}">
+                                {{ "%.3f"|format(job.p_value) }}
+                            </span>
+                        {% else %}
+                            <span class="na-value">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.effect_size %}
+                            <span class="effect-size {{ 'large' if job.effect_size >= 0.8 else 'medium' if job.effect_size >= 0.5 else 'small' }}">
+                                {{ "%.2f"|format(job.effect_size) }}
+                            </span>
+                        {% else %}
+                            <span class="na-value">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <time class="created-time" datetime="{{ job.created_at }}">
+                            {{ job.created_at[:16].replace('T', ' ') }}
+                        </time>
+                    </td>
+                    <td>
+                        {% if job.runtime_sec %}
+                            <span class="runtime {{ 'fast' if job.runtime_sec < 1 else 'normal' if job.runtime_sec < 5 else 'slow' }}">
+                                {{ "%.1f"|format(job.runtime_sec) }}s
+                            </span>
+                        {% else %}
+                            <span class="na-value">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-links">
+                            <a href="/ui/jobs/{{ job.job_id }}" class="link">View</a>
+                            {% if job.status == 'succeeded' %}
+                                <a href="/ui/jobs/{{ job.job_id }}/download/pdf" class="link">PDF</a>
+                                <a href="/ui/jobs/{{ job.job_id }}/download/csv" class="link">CSV</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Jobs Summary -->
+    <div class="jobs-summary">
+        <div class="summary-stats">
+            <div class="summary-item">
+                <span class="summary-label">Total Jobs:</span>
+                <span class="summary-value">{{ jobs|length }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Completed:</span>
+                <span class="summary-value">
+                    {{ (jobs | selectattr("status", "equalto", "succeeded") | list | length) }}
+                </span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Running:</span>
+                <span class="summary-value">
+                    {{ (jobs | selectattr("status", "equalto", "running") | list | length) }}
+                </span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Failed:</span>
+                <span class="summary-value">
+                    {{ (jobs | selectattr("status", "equalto", "failed") | list | length) }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h4>No validation jobs found</h4>
+        <p>Start by uploading your first EEG dataset for biomarker validation.</p>
+        <a href="/ui/upload" class="btn btn-primary btn-large">
+            <span class="btn-icon">📤</span>
+            Upload EEG Data
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh running jobs every 30 seconds
+    const runningJobs = document.querySelectorAll('.job-row[data-status="running"]');
+
+    if (runningJobs.length > 0) {
+        console.log(`Found ${runningJobs.length} running jobs, enabling auto-refresh`);
+
+        setInterval(() => {
+            if (!document.hidden) {
+                console.log('Refreshing page to update job status');
+                location.reload();
+            }
+        }, 30000); // 30 seconds
+
+        // Show auto-refresh indicator
+        const header = document.querySelector('.jobs-header');
+        const indicator = document.createElement('div');
+        indicator.className = 'auto-refresh-indicator';
+        indicator.innerHTML = '🔄 Auto-refreshing every 30s';
+        header.appendChild(indicator);
+    }
+
+    // Add tooltips for status badges
+    const statusBadges = document.querySelectorAll('.status-badge');
+    statusBadges.forEach(badge => {
+        const status = badge.textContent.trim();
+        let tooltip = '';
+
+        switch(status.split(' ')[0]) {
+            case '⏳':
+                tooltip = 'Job is queued for processing';
+                break;
+            case '⚙️':
+                tooltip = 'Job is currently running';
+                break;
+            case '✅':
+                tooltip = 'Job completed successfully';
+                break;
+            case '❌':
+                tooltip = 'Job failed - check details for error information';
+                break;
+        }
+
+        if (tooltip) {
+            badge.title = tooltip;
+        }
+    });
+
+    // Add performance indicators
+    const baValues = document.querySelectorAll('.ba-value');
+    baValues.forEach(element => {
+        const value = parseFloat(element.textContent);
+        if (value >= 97) {
+            element.title = 'Excellent performance - exceeds Phase V benchmark';
+        } else if (value >= 90) {
+            element.title = 'Very good performance';
+        } else if (value >= 75) {
+            element.title = 'Good performance';
+        } else if (value >= 65) {
+            element.title = 'Acceptable performance - meets clinical threshold';
+        } else {
+            element.title = 'Below clinical threshold (65%)';
+        }
+    });
+});
+
+// Robustness testing functionality
+async function startRobustnessTest() {
+    const button = document.getElementById('robustness-btn');
+    const originalText = button.innerHTML;
+
+    // Prompt for BIDS directory
+    const bidsDir = prompt('Enter BIDS dataset directory path for robustness testing:', '/app/data/in');
+    if (!bidsDir) {
+        return;
+    }
+
+    try {
+        // Update button state
+        button.disabled = true;
+        button.innerHTML = '<span class="btn-icon">⏳</span> Starting Robustness Test...';
+
+        // Start robustness test
+        const response = await fetch('/api/robustness', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                bids_dir: bidsDir,
+                site_id: 'ROBUSTNESS',
+                trial_id: 'VALIDATION'
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        alert(`Robustness test started successfully!\n\nJob ID: ${result.job_id}\n\nThis may take 30-60 minutes depending on dataset size. The page will auto-refresh to show progress.`);
+
+        // Refresh page to show new job
+        location.reload();
+
+    } catch (error) {
+        console.error('Error starting robustness test:', error);
+        alert(`Failed to start robustness test: ${error.message}`);
+
+        // Reset button
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+}
+
+// Check for robustness results
+async function checkRobustnessResults() {
+    try {
+        const response = await fetch('/api/robustness/results');
+        if (response.ok) {
+            const results = await response.json();
+            console.log('Robustness results available:', results);
+
+            // Add indicator if robustness results exist
+            const header = document.querySelector('.jobs-header');
+            if (header && !document.querySelector('.robustness-results-available')) {
+                const indicator = document.createElement('div');
+                indicator.className = 'robustness-results-available';
+                indicator.innerHTML = '📊 <a href="#" onclick="showRobustnessResults()">Robustness results available</a>';
+                header.appendChild(indicator);
+            }
+        }
+    } catch (error) {
+        // No robustness results available, which is fine
+        console.log('No robustness results available yet');
+    }
+}
+
+async function showRobustnessResults() {
+    try {
+        const response = await fetch('/api/robustness/results');
+        if (response.ok) {
+            const results = await response.json();
+            const summary = results.summary || {};
+
+            let message = 'Robustness Testing Results:\n\n';
+            message += `Total Tests: ${summary.total_runs || 'N/A'}\n`;
+            message += `Successful: ${summary.successful_runs || 'N/A'}\n`;
+            message += `Mean Performance: ${summary.mean_ba || 'N/A'}%\n`;
+            message += `Performance Range: ${summary.min_ba || 'N/A'}% - ${summary.max_ba || 'N/A'}%\n`;
+            message += `Below Threshold (65%): ${summary.below_threshold || 'N/A'} tests\n\n`;
+            message += 'Check the job details for complete analysis and plots.';
+
+            alert(message);
+        }
+    } catch (error) {
+        alert('Failed to load robustness results');
+    }
+}
+
+// Check for robustness results on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkRobustnessResults();
+});
+</script>
+{% endblock %}

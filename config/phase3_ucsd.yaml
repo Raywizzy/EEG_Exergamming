@@ -1,0 +1,37 @@
+# UCSD ds002778 Phase III config
+dataset_name: ucsd_ds002778
+openneuro_id: ds002778
+bids_root: data/raw/ucsd_ds002778           # where the BIDS dataset will live
+harmonized_root: data/harmonized/ucsd       # preprocessed FIF/NPZ outputs
+features_out: results/features/ucsd_Core5.csv
+
+# Preprocessing
+ref: CAR
+notch_hz: 50
+bandpass: [13, 30]         # beta band for burst extraction
+resample_hz: 250           # harmonize across sites
+bad_epoch_z_thresh: 4.0    # amplitude zscore rejection
+
+# Channels of interest (standard 10-20; script maps if not exact)
+motor:   [C3, Cz, C4]
+posterior: [P3, Pz, P4, O1, O2]
+
+# Burst detection parameters (Phase-8 validated)
+burst:
+  method: hilbert_envelope
+  threshold: median_plus_k_mad
+  k: 2.0
+  min_duration_ms: 100
+  merge_gap_ms: 60
+
+# Feature set to export (Core5)
+core5_features:
+  - duty_cycle
+  - mean_duration_ms
+  - median_duration_ms
+  - duration_cv
+  - motor_posterior_duty_ratio
+
+# LOSO tags (for later)
+site_tag: UCSD
+random_state: 42

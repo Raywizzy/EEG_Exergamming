@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  core15-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: core15-clinical-web:latest
+    container_name: core15-clinical-web
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - BIDS_IN=/app/data/in
+      - RESULTS_OUT=/app/data/out
+      - CORE15_ENTRYPOINT=/app/scripts/clinical_trial_processor.py
+      - CORE15_CONFIG=/app/config/preprocessing_config.yaml
+
+    volumes:
+      - ./test_data:/app/data/in:ro
+      - ./clinical_output:/app/data/out
+      - ./clinical_logs:/app/clinical_logs
+      - ../src:/app/src:ro
+      - ../config:/app/config:ro
+      - ../scripts:/app/scripts:ro
+
+    working_dir: /app
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+        reservations:
+          memory: 2G
+          cpus: "1.0"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    restart: unless-stopped
+
+    networks:
+      - core15-network
+
+  # Optional: Database for production (currently using in-memory storage)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: core15-postgres
+  #   environment:
+  #     POSTGRES_DB: core15_clinical
+  #     POSTGRES_USER: core15
+  #     POSTGRES_PASSWORD: core15_secure_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - core15-network
+
+  # Optional: Redis for caching and session management
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: core15-redis
+  #   networks:
+  #     - core15-network
+
+networks:
+  core15-network:
+    driver: bridge
+    name: core15-clinical-network
+
+volumes:
+  postgres_data:
+    name: core15-postgres-data

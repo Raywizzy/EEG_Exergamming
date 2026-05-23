@@ -1,0 +1,49 @@
+# Phase III Multi-Site Dataset Configuration
+# Sites for Leave-One-Site-Out (LOSO) validation
+
+sites:
+  leicester:
+    root: results/phase8_fixed_bursts/
+    data_file: real_leicester_burst_features_FIXED.csv
+    channels: [Fp1,Fp2,F3,F4,C3,C4,Cz,P3,P4,Pz,O1,O2,T7,T8]
+    site_label: LEI
+    sampling_rate: 500
+    description: "Leicester Parkinson's dataset - Phase 8 fixed"
+
+  bndu:
+    root: results/phase5_beta_bursts/
+    data_file: beta_burst_features.csv
+    channels: [C3,Cz,C4,P3,Pz,P4,O1,O2]
+    site_label: BNDU
+    sampling_rate: 500
+    description: "MRC BNDU dataset - Phase 5 beta bursts"
+
+  ucsd:
+    root: results/features/
+    data_file: ucsd_Core5.csv
+    channels: [C3, Cz, C4, P3, Pz, P4, O1, O2]
+    site_label: UCSD
+    sampling_rate: 250
+    description: "UC San Diego ds002778 - Parkinson's disease EEG dataset"
+    status: ready
+
+# Core5 features validated in Phase II
+core5_features:
+  - duration_cv
+  - duty_cycle
+  - mean_duration_ms
+  - median_duration_ms
+  - motor_posterior_duty_ratio
+
+# Label mapping for classification
+label_mapping:
+  PD_REAL: 1
+  PD_SHAM: 0
+  CONTROL: 0  # Map control to sham for binary classification
+
+# Quality control thresholds
+qc_thresholds:
+  min_epochs_per_subject: 50
+  max_missing_rate: 0.15
+  min_recording_duration_s: 300
+  max_artifact_rate: 0.20

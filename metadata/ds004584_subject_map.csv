@@ -1,0 +1,15 @@
+raw_id,bids_id,group_original,diagnosis,mapping_method
+B1,sub-001,PD,PD_REAL,balanced_assignment
+B10,sub-002,PD,PD_REAL,balanced_assignment
+B11,sub-003,PD,PD_REAL,balanced_assignment
+B12,sub-004,PD,PD_REAL,balanced_assignment
+B13,sub-005,PD,PD_REAL,balanced_assignment
+B15,sub-006,PD,PD_REAL,balanced_assignment
+B16,sub-007,PD,PD_REAL,balanced_assignment
+B2,sub-101,Control,CONTROL,balanced_assignment
+B3,sub-102,Control,CONTROL,balanced_assignment
+B4,sub-103,Control,CONTROL,balanced_assignment
+B6,sub-104,Control,CONTROL,balanced_assignment
+B7,sub-105,Control,CONTROL,balanced_assignment
+B8,sub-106,Control,CONTROL,balanced_assignment
+B9,sub-107,Control,CONTROL,balanced_assignment

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-container">
+        <div class="error-icon">
+            {% if status_code == 404 %}
+                🔍
+            {% elif status_code == 500 %}
+                ⚠️
+            {% else %}
+                ❌
+            {% endif %}
+        </div>
+
+        <div class="error-content">
+            <h3>{{ title }}</h3>
+            <p class="error-message">{{ message }}</p>
+
+            {% if status_code == 404 %}
+            <div class="error-help">
+                <h4>What you can do:</h4>
+                <ul>
+                    <li>Check the URL for typos</li>
+                    <li>Go back to the <a href="/ui/">dashboard</a></li>
+                    <li>Visit the <a href="/ui/upload">upload page</a> to start a new validation</li>
+                    <li>Browse existing <a href="/ui/jobs">validation jobs</a></li>
+                </ul>
+            </div>
+            {% elif status_code == 500 %}
+            <div class="error-help">
+                <h4>What you can do:</h4>
+                <ul>
+                    <li>Try refreshing the page</li>
+                    <li>Check the <a href="/api/health">system health</a></li>
+                    <li>Go back to the <a href="/ui/">dashboard</a></li>
+                    <li>Contact support if the problem persists</li>
+                </ul>
+            </div>
+            {% else %}
+            <div class="error-help">
+                <h4>What you can do:</h4>
+                <ul>
+                    <li>Go back to the <a href="/ui/">dashboard</a></li>
+                    <li>Check the <a href="/ui/help">help documentation</a></li>
+                    <li>Try starting a new <a href="/ui/upload">validation job</a></li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="error-actions">
+                <a href="/ui/" class="btn btn-primary">
+                    <span class="btn-icon">🏠</span>
+                    Go to Dashboard
+                </a>
+                <button onclick="history.back()" class="btn btn-secondary">
+                    <span class="btn-icon">←</span>
+                    Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status (for 500 errors) -->
+    {% if status_code == 500 %}
+    <div class="system-status-check">
+        <h4>System Status</h4>
+        <p>Check current system health for more information about this error.</p>
+        <a href="/api/health/detailed" class="link">View detailed system status →</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 2rem;
+}
+
+.error-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.error-content h3 {
+    font-size: 2rem;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.error-message {
+    font-size: 1.1rem;
+    color: #6b7280;
+    margin-bottom: 2rem;
+}
+
+.error-help {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.error-help h4 {
+    margin-top: 0;
+    color: #1f2937;
+}
+
+.error-help ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.error-help li {
+    margin-bottom: 0.5rem;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.system-status-check {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 2rem;
+    max-width: 600px;
+}
+
+.system-status-check h4 {
+    margin-top: 0;
+    color: #92400e;
+}
+
+@media (max-width: 768px) {
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .error-icon {
+        font-size: 3rem;
+    }
+
+    .error-content h3 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
