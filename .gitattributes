@@ -1,0 +1,15 @@
+artifacts/** filter=lfs diff=lfs merge=lfs -text
+*.fif filter=lfs diff=lfs merge=lfs -text
+models/** filter=lfs diff=lfs merge=lfs -text
+*.set filter=lfs diff=lfs merge=lfs -text
+bids/** filter=lfs diff=lfs merge=lfs -text
+**/__pycache__/** filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+*.edf filter=lfs diff=lfs merge=lfs -text
+*.fdt filter=lfs diff=lfs merge=lfs -text
+data/** filter=lfs diff=lfs merge=lfs -text
+logs/** filter=lfs diff=lfs merge=lfs -text
+clinical_audit_logs/** filter=lfs diff=lfs merge=lfs -text
+results/** filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*_pickle filter=lfs diff=lfs merge=lfs -text
