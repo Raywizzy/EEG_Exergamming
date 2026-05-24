@@ -1,116 +1,117 @@
 # EEG Exergaming Project
 
-Classification of PD_REAL vs PD_SHAM EEG-driven feedback in Parkinson's patients.
+Subject-wise EEG analysis workflows for Parkinson's disease exergaming and neurofeedback research.
 
-## Project Status: ✅ Ready for Implementation!
+This repository contains code, configuration, documentation, datasets, generated artifacts, and validation outputs for the EEG exergaming project. Large datasets and generated binary artifacts are stored with Git LFS.
 
-**🎯 Perfect Dataset Found**: MRC BNDU with exact PD_REAL vs PD_SHAM conditions!
+## Repository Status
+
+- GitHub visibility: private
+- Default branch: `phase2_domain_adaptation`
+- Large files: tracked with Git LFS
+- Latest local audit run: `2026-05-24`
+- Audit status: failing because later-stage checks are still pending, not because the repository upload failed
+
+The strict project rules are intentionally conservative: no synthetic data, no fabricated results, no skipped stages, and subject-wise validation only.
+
+## Data And Provenance
+
+Approved data sources are documented in [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md). Do not add synthetic, placeholder, or fabricated data to this project.
+
+Tracked data/artifact areas include:
+
+- `data/`
+- `bids/`
+- `results/`
+- `artifacts/`
+- `models/`
+- `logs/`
+- `clinical_audit_logs/`
+
+These paths are tracked through Git LFS. Clone users must install Git LFS before expecting the large files to resolve correctly.
+
+```bash
+git lfs install
+git lfs pull
+```
 
 ## Quick Start
 
-1. **Check Environment**:
-   ```bash
-   python scripts/setup_environment.py
-   ```
+Create an environment with the project dependencies:
 
-2. **Run Enhanced Audit**:
-   ```bash
-   python src/audit_pipeline.py
-   ```
-
-## Current Requirements
-
-### Step 1: Download Primary Dataset
-
-Choose from approved public sources:
-
-**Option A - OpenNeuro (Recommended)**:
 ```bash
-python scripts/download_dataset.py --source openneuro --dataset ds002778
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-**Option B - Kaggle**:
+Run the environment check:
+
 ```bash
-python scripts/download_dataset.py --source kaggle --dataset souravbasakshuvo/uc-san-diego-parkinsons-disease-resting-state-eeg
+python scripts/setup_environment.py
 ```
 
-### Step 2: Verify Compliance
+Run the strict audit:
+
 ```bash
-python src/audit_pipeline.py
+python scripts/strict_audit.py
 ```
 
-## Project Structure
+The audit is expected to fail until all required later-stage validation criteria are complete.
 
-```
-├── data/
-│   ├── raw/           # Original dataset files
-│   ├── interim/       # Intermediate processing files
-│   └── processed/     # Final processed data
-├── src/
-│   ├── preprocessing/ # EEG preprocessing functions
-│   ├── features/      # Feature extraction
-│   ├── models/        # ML models and training
-│   └── utils/         # Utility functions
-├── scripts/           # Executable scripts for each stage
-├── results/           # Analysis outputs
-│   ├── figures/       # Plots and visualizations
-│   ├── tables/        # Result tables
-│   └── models/        # Saved model files
-├── notebooks/         # Jupyter notebooks for exploration
-└── docs/              # Documentation
+## Project Layout
+
+```text
+.
+├── bids/                    # BIDS-formatted datasets tracked with Git LFS
+├── clinical_mvp/            # Clinical MVP service and deployment files
+├── config/                  # Pipeline and validation configuration
+├── data/                    # Raw/interim/external data tracked with Git LFS
+├── docs/                    # Protocol, roadmap, data source, and analysis docs
+├── manuscripts/             # Manuscript drafts and submission materials
+├── models/                  # Model metadata and model artifacts
+├── results/                 # Validation outputs, figures, reports, and badges
+├── scripts/                 # Stage scripts and operational utilities
+└── src/                     # Core project package
 ```
 
-## Pipeline Overview
+## Core Workflow
 
-1. **Stage 1**: Dataset Documentation & Specification
-2. **Stage 2**: EEG Preprocessing (1-40Hz bandpass, 50Hz notch, ICA)
-3. **Stage 3**: Feature Engineering (alpha/beta power, connectivity)
-4. **Stage 4**: Machine Learning (subject-wise CV, multiple models)
-5. **Stage 5**: Results & Validation (permutation tests, significance)
+1. Confirm data provenance against `docs/DATA_SOURCES.md`.
+2. Run dataset documentation and validation scripts.
+3. Run preprocessing only after stage acceptance criteria pass.
+4. Extract features using the configured feature set.
+5. Evaluate with subject-wise splits only.
+6. Run cross-dataset validation and permutation tests where significance is claimed.
+7. Run `scripts/strict_audit.py` before reporting completion.
 
-## Hard Rules (Enforced by Audit)
+## Compliance Rules
 
-- **No synthetic data**: Only approved datasets allowed
-- **No skipping stages**: Each stage must pass acceptance criteria
-- **Subject-wise isolation**: No epoch mixing across train/test
-- **Verifiable outputs**: All claims must include exact commands/outputs
-- **Fixed classes**: Only CONTROL, PD_REAL, PD_SHAM allowed
+- No synthetic, fake, placeholder, or fabricated datasets.
+- No invented metrics or unsupported claims.
+- No epoch-wise leakage across train/test folds.
+- Validation must be subject-wise.
+- Class labels must match the project rules exactly.
+- Every reported metric must be traceable to a command, output, and artifact path.
+- If required files or tools are missing, stop and report the exact error.
 
-## Classes
+## Git LFS Notes
 
-- **CONTROL**: Control subjects
-- **PD_REAL**: Parkinson's patients, real feedback (off-medication)
-- **PD_SHAM**: Parkinson's patients, sham feedback (on/sham medication)
+This repository contains many LFS objects. A normal clone without Git LFS may show pointer files instead of the actual datasets/artifacts.
 
-## Next Steps
+Useful checks:
 
-1. Provide dataset path via `EEG_DATA_PATH` environment variable
-2. Run `python scripts/stage1_dataset_documentation.py`
-3. Ensure audit passes: `python scripts/strict_audit.py`
-4. Proceed to Stage 2 preprocessing
+```bash
+git lfs ls-files | wc -l
+git lfs status
+git status --short --branch
+```
 
-## Dependencies
-
-See `requirements.txt` for full list. Main packages:
-- MNE-Python (EEG processing)
-- scikit-learn (machine learning)
-- NumPy, SciPy, Pandas (data handling)
-- Matplotlib, Seaborn (visualization)
-
-
-
-## 🎯 Phase IV Multi-Site Validation Status
+## Current Validation Badges
 
 ![LOSO Overall Performance](results/badges/loso_overall_performance.svg)
 ![Clinical Significance](results/badges/loso_clinical_significance.svg)
 ![Multi-Site Validation](results/badges/multisite_validation.svg)
 ![CORAL Domain Adaptation](results/badges/coral_adaptation.svg)
 
-### Current Results
-**Iowa Dataset (ds004584)**: ![Performance](results/badges/ds004584_performance.svg) ![Sample Size](results/badges/ds004584_sample_size.svg)
-**UCSD Dataset (ds002778)**: ![Performance](results/badges/ds002778_performance.svg) ![Sample Size](results/badges/ds002778_sample_size.svg)
-
-**🎉 Achievement**: First successful multi-site LOSO cross-validation proving external generalization of Core5 EEG biomarkers across independent research sites.
-
-*Badges auto-update with each validation run - Last updated: 2025-09-20 09:52:35*
-
+Badges are generated artifacts and should be interpreted alongside the audit outputs and validation reports in `results/`.
